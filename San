@@ -1,0 +1,156 @@
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
+import json
+
+# In-memory database for storing user data (Use a real database in production)
+user_data = {}
+
+# /start Command Handler
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    args = context.args  # Referral ID if present
+    referrer_id = args[0] if args else None
+
+    # Initialize user in the database if not exists
+    if user_id not in user_data:
+        user_data[user_id] = {"points": 0, "referrals": []}
+
+    # Handle referral
+    if referrer_id and referrer_id != str(user_id) and int(referrer_id) in user_data:
+        if user_id not in user_data[int(referrer_id)]["referrals"]:
+            user_data[int(referrer_id)]["points"] += 10  # Add points to the referrer
+            user_data[int(referrer_id)]["referrals"].append(user_id)
+
+    referral_link = f"https://t.me/{context.bot.username}?start={user_id}"
+    welcome_message = (
+        f"Welcome to the Refer and Earn Bot!\n\n"
+        f"🔗 Your referral link: {referral_link}\n\n"
+        f"Refer your friends and earn points! 🎉"
+    )
+    await update.message.reply_text(welcome_message)
+
+# /points Command Handler
+async def points(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    points = user_data.get(user_id, {}).get("points", 0)
+    await update.message.reply_text(f"💰 You have {points} points!")
+
+# /leaderboard Command Handler
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    leaderboard = sorted(
+        user_data.items(), key=lambda x: x[1]["points"], reverse=True
+    )
+    message = "🏆 Leaderboard:\n"
+    for rank, (user_id, data) in enumerate(leaderboard[:10], start=1):
+        message += f"{rank}. User {user_id}: {data['points']} points\n"
+    await update.message.reply_text(message)
+
+# /withdraw Command Handler
+async def withdraw(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "🛍️ Withdrawal request received! The admin will contact you soon."
+    )
+
+# /help Command Handler
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    help_text = (
+        "/start - Start the bot and get your referral link\n"
+        "/points - Check your total points\n"
+        "/leaderboard - View the top users\n"
+        "/withdraw - Request to redeem your points\n"
+        "/help - Show the help menu"
+    )
+    await update.message.reply_text(help_text)
+
+# Main Function
+async def main():
+    # Replace YOUR_BOT_TOKEN_HERE with your actual bot token
+    bot_token = "YOUR_BOT_TOKEN_HERE"
+
+    # Create Application
+    app = ApplicationBuilder().token(bot_token).build()
+
+    # Add Command Handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("points", points))
+    app.add_handler(CommandHandler("leaderboard", leaderboard))
+    app.add_handler(CommandHandler("withdraw", withdraw))
+    app.add_handler(CommandHandler("help", help_command))
+
+    print("Bot is running...")
+    await app.run_polling()
+
+# Run the Bot
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
